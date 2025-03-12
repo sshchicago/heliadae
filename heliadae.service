@@ -1,0 +1,15 @@
+[Unit]
+Description=heliadae
+Documentation=https://github.com/sshchicago/heliadae/
+
+[Service]
+ExecStart=/home/pi/heliadae/main.py
+User=pi
+Group=pi
+StandardOutput=journal
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+Alias=heliadae.service
