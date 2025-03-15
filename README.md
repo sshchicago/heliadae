@@ -1,6 +1,6 @@
 # HELIADAE
 
-The sons of H(a)elios. Code to run on a Raspberry Pi Zero 2 W for a HAB flight. Logs GPS and Radiacode 10X. Pi camera optional (untested).
+The sons of H(a)elios. Code to run on a Raspberry Pi Zero 2 W for a HAB flight. Logs GPS and Radiacode 10X.
 
 ## Setup 
 
@@ -11,14 +11,13 @@ Wiring:
 
 On a clean install of Raspbian 9:
 * raspi-config:
-  * Interfacing: Serial: Disable console, enable hardware
-  * Interfacing: Enable I2C
-  * Interfacing: Enable the Camera (optional)
+  * Interfacing: Serial: Disable console, enable hardware (for gps)
+  * Interfacing: Enable I2C (for PiSugar RTC)
 * update PiSugar firmware: `curl https://cdn.pisugar.com/release/PiSugarUpdate.sh | sudo bash`
-* enable rtc by appending `dtoverlay=i2c-rtc,ds3231` to `/boot/firmware/config.txt`
+* enable PiSugar rtc by appending `dtoverlay=i2c-rtc,ds3231` to `/boot/firmware/config.txt`
 * restart
-* git clone this repo into /home/pi/heliadae
-* run install.sh
+* git clone this repo into /home/pi/heliadae `git clone https://github.com/sshchicago/heliadae.git`
+* run install.sh `./install.sh`
 
 Optional:
 * PiSugar3 battery management: `wget -qO - https://cdn.pisugar.com/release/pisugar-power-manager.sh | bash -s -c release`

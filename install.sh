@@ -14,8 +14,8 @@ echo 'SUBSYSTEMS=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="f123" GROUP
 sudo cp /dev/shm/50-myusb.rules /etc/udev/rules.d/50-myusb.rules
 sudo udevadm control --reload-rules && sudo udevadm trigger
 
-echo "Moving README to accessible location..."
-sudo cp -pv README_ABOUT_THIS_SCIENCE_EXPERIMENT.txt /boot/
+echo "Moving README to accessible location if someone plugs in the SD card..."
+sudo cp -pv README_ABOUT_THIS_SCIENCE_EXPERIMENT.txt /boot/firmware/
 
 echo "Making main tracker loop executable"
 sudo chmod +x main.py

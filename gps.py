@@ -33,7 +33,7 @@ class Gps():
         os.makedirs(base_directory, exist_ok=True)
         logFileName = f'/home/pi/logs/gps-{start}.log'
         with open(logFileName, 'w') as logFile:
-            logFile.write(f'### Beginning at {start}')
+            logFile.write(f'### Beginning at {start}\n')
 
         self.debug=debug
         self.port = serial.Serial('/dev/ttyS0', 9600, timeout=self.default_timeout)
@@ -232,7 +232,7 @@ class Gps():
             self.dbg(exception)
             return False
         if isinstance(nmea_line, pynmea2.types.talker.GGA):
-            logFile.write(repr(nmea_line))
+            logFile.write(repr(nmea_line) + "\n")
             logFile.flush()
         else:
             print("GPS: Unhandled message type received: {}".format(nmea_line))
