@@ -3,11 +3,16 @@
 cd $(dirname $(realpath $0))
 
 echo "Disabling Bluetooth..."
+sudo systemctl stop hciuart
 sudo systemctl disable hciuart
+
+echo "Updating packages..."
+sudo apt-get update
+sudo apt-get upgrade
 
 echo "Installing python dependencies..."
 sudo apt-get install python3-pip libglib2.0-dev
-pip install radiacode[examples] pynmea2 --break-system-packages
+pip install radiacode pynmea2 --break-system-packages
 
 echo "Setting up Radiacode udev rules..."
 echo 'SUBSYSTEMS=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="f123" GROUP="users", MODE="0666"' > /dev/shm/50-myusb.rules

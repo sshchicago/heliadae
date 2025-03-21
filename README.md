@@ -13,14 +13,13 @@ On a clean install of Raspbian 9:
 * raspi-config:
   * Interfacing: Serial: Disable console, enable hardware (for gps)
   * Interfacing: Enable I2C (for PiSugar RTC)
+* if prompted, restart
+* install PiSugar battery management: `wget https://cdn.pisugar.com/release/pisugar-power-manager.sh; bash pisugar-power-manager.sh -c release`
 * update PiSugar firmware: `curl https://cdn.pisugar.com/release/PiSugarUpdate.sh | sudo bash`
 * enable PiSugar rtc by appending `dtoverlay=i2c-rtc,ds3231` to `/boot/firmware/config.txt`
 * restart
 * git clone this repo into /home/pi/heliadae `git clone https://github.com/sshchicago/heliadae.git`
-* run install.sh `./install.sh`
-
-Optional:
-* PiSugar3 battery management: `wget -qO - https://cdn.pisugar.com/release/pisugar-power-manager.sh | bash -s -c release`
+* run install.sh `cd heliadae; ./install.sh`
 
 ## Notes
 
