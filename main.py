@@ -18,8 +18,13 @@ def main():
     ### This would be a good place to stop blinking an LED
 
     while True:
+        if not gps.isThreadAlive():
+            gps = gpsLib.Gps()
+        if not rc.isThreadAlive():
+            rc = rcLib.Rc()
+
         print(f'[{datetime.now()}]: Loop running...')
-        time.sleep(60)
+        time.sleep(30)
 
 if __name__ == "__main__":
     main()

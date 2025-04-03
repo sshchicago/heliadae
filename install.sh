@@ -2,9 +2,9 @@
 
 cd $(dirname $(realpath $0))
 
-echo "Disabling Bluetooth..."
-sudo systemctl stop hciuart
-sudo systemctl disable hciuart
+#echo "Disabling Bluetooth..."
+#sudo systemctl stop hciuart
+#sudo systemctl disable hciuart
 
 echo "Updating packages..."
 sudo apt-get update

@@ -26,6 +26,7 @@ On a clean install of Raspbian 9:
 * Get PiSugar3 battery life: `echo "get battery" | nc -q 127.0.0.1 8423`
 * Get uptime (seconds): `cat /proc/uptime`
 * Check heliadae service logs: `sudo journalctl -u heliadae`
+* Stop heliadae service: `sudo systemctl stop heliadae`
 
 ## Acknowledgements
 
