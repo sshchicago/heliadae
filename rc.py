@@ -13,24 +13,24 @@ class Rc():
     Encapsulates the Radiacode 10X detector.
     Assumes a USB connection.
     """
-    debug = False
+    mainLogFile = None
     io_thread = None
 
-    def __init__(self, debug=False):
+    def __init__(self, mainLogFile):
         """
         Initialize the Radiacode 10X to log to disk.
         """
-        self.debug = debug
+        self.mainLogFile = mainLogFile
 
         device = rcCore.RadiaCode()
         a0, a1, a2 = device.energy_calib()
         start = datetime.now()
-        cwd = os.getcwd()
+        cwd = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
         base_directory = f'{cwd}/logs'
         os.makedirs(base_directory, exist_ok=True)
         logFileName = f'{base_directory}/rc-{start}.log'
-        self.dbg(f'RC: Logging to {logFileName}')
+        self.log(f'Logging to {logFileName}')
 
         with open(logFileName, 'w') as logFile:
             logFile.write(f'### Beginning at {start}.\n')
@@ -38,16 +38,19 @@ class Rc():
             logFile.write(f'### Firmware: {device.fw_version()}\n')
             logFile.write(f'### Energy Calibration constants: {a0}, {a1}, {a2}.\n')
 
-        print("RC: Resetting dose and spectrum")
+        self.log("Resetting dose and spectrum")
         device.dose_reset()
         device.spectrum_reset()
         
         self.io_thread = threading.Thread(target=self.__io_thread, args=[device, logFileName, start], daemon=True)
         self.io_thread.start()
-        print("RC: Done with init")
+        self.log("Done with init")
 
 
     def isThreadAlive(self):
+        """
+        Used by main.py to see if the background thread crashed.
+        """
         return self.io_thread.is_alive()
 
 
@@ -55,16 +58,16 @@ class Rc():
         """
         Do not invoke directly, this method never returns.
         """
-        print("RC: Radiacode i/o thread running")
+        self.log("Radiacode i/o thread running")
         logFile = open(logFileName, 'a')
         while True:
-            self.dbg("RC: Logging buffer")
+            self.log("Logging buffer")
             for data in device.data_buf():
                 msg = data.dt.isoformat() + " " + repr(data) + "\n"
                 logFile.write(msg)
                 logFile.flush()
             
-            self.dbg("RC: Logging spectrum")
+            self.log("Logging spectrum")
             spectrum = device.spectrum()
             newTime = start + spectrum.duration
             
@@ -72,15 +75,15 @@ class Rc():
             logFile.write(msg)
             logFile.flush()
 
-            self.dbg("RC: Sleeping")
+            self.log("Sleeping")
             time.sleep(5)
 
-
-    def dbg(self, msg):
-        if self.debug:
-            print(msg)
-
+    def log(self, message):
+        self.mainLogFile.write(f'[{datetime.now()}]: RC: {message}\n')
+        self.mainLogFile.flush()
+    
 if __name__ == "__main__":
-    print("RC: Starting Radiacode...")
-    rc = Rc(True)
-    input("RC: Running. Press Enter to exit.")
+    with open(f'main-rc-{datetime.now()}.log', 'w') as logFile:
+        print("RC: Starting Radiacode...")
+        rc = Rc(logFile)
+        input("RC: Running. Press Enter to exit.")

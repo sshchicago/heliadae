@@ -17,7 +17,7 @@ class Gps():
     Contains a PySerial UART connection, and a I/O thread.
     Also includes functions to configure the GPS, and generate "UBX" messages.
     """
-    debug = False
+    mainLogFile = None
     default_timeout = 0.1 # Serial port read timeout. Should be quite low.
     port = None
 
@@ -26,12 +26,13 @@ class Gps():
 
     io_thread = None
 
-    def __init__(self, debug=False):
+    def __init__(self, mainLogFile):
         """
         Configure the GPS device and initialize queues, and start the I/O thread.
         """
+        self.mainLogFile = mainLogFile
         start = datetime.now()
-        cwd = os.getcwd()
+        cwd = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
         base_directory = f'{cwd}/logs'
         os.makedirs(base_directory, exist_ok=True)
@@ -39,7 +40,6 @@ class Gps():
         with open(logFileName, 'w') as logFile:
             logFile.write(f'### Beginning at {start}\n')
 
-        self.debug=debug
         self.port = serial.Serial('/dev/ttyS0', 9600, timeout=self.default_timeout)
         self.ubx_write_queue = queue.Queue()
         self.ubx_read_queue = queue.Queue()
@@ -49,10 +49,13 @@ class Gps():
         self._configure_output_messages()
         time.sleep(1)
         self._enable_flight_mode()
-        print("GPS: Done with init")
+        self.log("Done with init")
 
 
     def isThreadAlive(self):
+        """
+        Used by main.py to see if the background thread crashed.
+        """
         return self.io_thread.is_alive()
 
 
@@ -60,7 +63,7 @@ class Gps():
         """
         Disables NMEA sentences with CFG-PRN: GLL, GSA, GSV, RMC, VTG (id 1 to 5)
         """
-        self.dbg("GPS: Configuring NMEA sentence output")
+        self.log("Configuring NMEA sentence output")
         ubx_cfg_class = 0x06
         ubx_cfg_msg = 0x01
         for index in range(1, 6):
@@ -70,7 +73,7 @@ class Gps():
             ack_ok = self._send_and_confirm_ubx_packet(ubx_cfg_class, ubx_cfg_msg, payload)
             if not ack_ok:
                 raise Exception("Failed to configure output message id {}".format(index))
-        print("GPS: NMEA sentence output configured.")
+        self.log("NMEA sentence output configured.")
 
 
     def _enable_flight_mode(self):
@@ -84,14 +87,14 @@ class Gps():
             https://github.com/PiInTheSky/pits/blob/master/tracker/gps.c#L423
         Reference: https://content.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_UBX-13003221.pdf?utm_content=UBX-13003221
         """
-        self.dbg("GPS: Enabling flight mode")
+        self.log("Enabling flight mode")
         cfg_nav5_class_id = 0x06
         cfg_nav5_message_id = 0x24
         payload = bytearray.fromhex("FF FF 06 03 00 00 00 00 10 27 00 00 05 00 FA 00 FA 00 64 00 2C 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00")
         ack_ok = self._send_and_confirm_ubx_packet(cfg_nav5_class_id, cfg_nav5_message_id, payload)
         if not ack_ok:
             raise Exception("Failed to configure GPS for flight mode.")
-        print("GPS: Flight mode enabled.")
+        self.log("Flight mode enabled.")
 
 
     def _reboot(self):
@@ -152,7 +155,7 @@ class Gps():
             raise Exception("ubx_read_queue must be empty before calling this function")
         send_packet = self._ubx_assemble_packet(class_id, message_id, payload)
         self.ubx_write_queue.put(send_packet)
-        print("GPS: UBX packet built: {}".format(send_packet))
+        self.log("UBX packet built: {}".format(send_packet))
 
         expected_ack = self._ubx_assemble_packet(0x05, 0x01, bytearray((class_id, message_id)))
 
@@ -163,16 +166,16 @@ class Gps():
             if self.ubx_read_queue.qsize() > 0:
                 ack = self.ubx_read_queue.get()
                 if ack == expected_ack:
-                    print("GPS: UBX packet ACKd: {}".format(ack))
+                    self.log("UBX packet ACKd: {}".format(ack))
                     return True
                 elif ack[2:3] == bytearray.fromhex("05 01"):
-                    print("GPS: UBX-NAK packet! {}".format(ack))
+                    self.log("UBX-NAK packet! {}".format(ack))
                     return False
                 else:
-                    print("GPS: Unknown UBX reply: {}".format(ack))
-                    print("GPS: Looking for      : {}".format(expected_ack))
+                    self.log("Unknown UBX reply: {}".format(ack))
+                    self.log("Looking for      : {}".format(expected_ack))
                 return True
-        print("GPS: UBX packet sent without ACK! This is bad.")
+        self.log("UBX packet sent without ACK! This is bad.")
         return False
 
 
@@ -183,7 +186,7 @@ class Gps():
 
         Do not invoke directly, this method never returns.
         """
-        print("GPS: I/O thread started")
+        self.log("I/O thread started")
         with open(logFileName, 'a') as logFile:
             while True:
                 while self.ubx_write_queue.qsize() > 0:
@@ -191,7 +194,7 @@ class Gps():
                     to_write_type = type(to_write)
                     if to_write_type == str:
                         to_write = to_write.encode('utf-8')
-                    self.dbg("GPS: write {}: {}".format(to_write_type, to_write))
+                    self.log("UBX packet write {}: {}".format(to_write_type, to_write))
                     self.port.write(to_write)
                 got_some_data = self.__read(logFile)
                 if not got_some_data:
@@ -219,7 +222,7 @@ class Gps():
             self.port.timeout = self.default_timeout
             ubx_packet = first_byte + remaining_header + length_bytes + remaining_packet
             self.ubx_read_queue.put(ubx_packet)
-            self.dbg("GPS: UBX raw packet received: {}".format(ubx_packet))
+            self.log("UBX raw packet received: {}".format(ubx_packet))
             return True
         else:
             line = self.port.readline()
@@ -227,33 +230,32 @@ class Gps():
         try:
             ascii_line = line.decode('ascii')
         except UnicodeDecodeError as exception:
-            self.dbg(exception)
-            self.dbg("GPS: Reply string decode error on: {}".format(line))
+            self.log(exception)
+            self.log("Reply string decode error on: {}".format(line))
             return False
         if ascii_line[0] != "$":
-            self.dbg("GPS: Non-dollar line")
+            self.log("Non-dollar line")
             return False
         # We actually have a NMEA sentence!
-        self.dbg("GPS: (buf={}) raw line: {}".format(waiting, line))
+        self.log("NMEA (buf={}) raw line: {}".format(waiting, line))
         try:
             nmea_line = pynmea2.parse(ascii_line.strip(), check=True)
         except pynmea2.nmea.ParseError as exception:
-            self.dbg(exception)
+            self.log(exception)
             return False
         if isinstance(nmea_line, pynmea2.types.talker.GGA):
             logFile.write(repr(nmea_line) + "\n")
             logFile.flush()
         else:
-            print("GPS: Unhandled message type received: {}".format(nmea_line))
+            self.log("Unhandled message type received: {}".format(nmea_line))
         return True
 
-
-    def dbg(self, message):
-        """ Prints a debug message to stdout if self.debug is set True """
-        if self.debug:
-            print(message)
+    def log(self, message):
+        self.mainLogFile.write(f'[{datetime.now()}]: GPS: {message}\n')
+        self.mainLogFile.flush()
 
 if __name__ == "__main__":
-    print("GPS: Starting GPS...")
-    gps = Gps(True)
-    input("GPS: Running. Press Enter to exit.")
+    with open(f'main-gps-{datetime.now()}.log', 'w') as logFile:
+        print(f"GPS: [{datetime.now()}]: Starting GPS...")
+        gps = Gps(logFile)
+        input(f"GPS: [{datetime.now()}]: Running. Press Enter to exit.")

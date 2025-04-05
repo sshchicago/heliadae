@@ -2,29 +2,40 @@
 """ Main tracker loop """
 
 import time
+import os
 from datetime import datetime
 import gps as gpsLib
 import rc as rcLib
 
 def main():
     """ Main tracker loop. Never exits. """
-    print(f'[{datetime.now()}]: Starting up main tracker loop...')
+    cwd = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    start = datetime.now()
 
-    ### This would be a good place to start blinking an LED
+    base_directory = f'{cwd}/logs'
+    os.makedirs(base_directory, exist_ok=True)
+    logFileName = f'{base_directory}/main-{start}.log'
+
+    with open(logFileName, 'w') as logFile:
+        logFile.write(f'[{datetime.now()}]: Starting up main tracker loop...\n')
+
+        ### This would be a good place to start blinking an LED
  
-    gps = gpsLib.Gps()
-    rc = rcLib.Rc()
+        gps = gpsLib.Gps(logFile)
+        rc = rcLib.Rc(logFile)
 
-    ### This would be a good place to stop blinking an LED
+        ### This would be a good place to stop blinking an LED
 
-    while True:
-        if not gps.isThreadAlive():
-            gps = gpsLib.Gps()
-        if not rc.isThreadAlive():
-            rc = rcLib.Rc()
+        while True:
+            if not gps.isThreadAlive():
+                logFile.write(f'[{datetime.now()}]: Restarting GPS...\n')
+                gps = gpsLib.Gps(logFile)
+            if not rc.isThreadAlive():
+                logFile.write(f'[{datetime.now()}]: Restarting RC...\n')
+                rc = rcLib.Rc(logFile)
 
-        print(f'[{datetime.now()}]: Loop running...')
-        time.sleep(30)
+            logFile.write(f'[{datetime.now()}]: Loop running...\n')
+            time.sleep(30)
 
 if __name__ == "__main__":
     main()
