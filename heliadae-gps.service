@@ -1,9 +1,9 @@
 [Unit]
-Description=heliadae
+Description=heliadae-gps
 Documentation=https://github.com/sshchicago/heliadae/
 
 [Service]
-ExecStart=/home/pi/heliadae/main.py
+ExecStart=/home/pi/heliadae/gps.py
 User=pi
 Group=pi
 StandardOutput=journal
@@ -12,4 +12,4 @@ RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
-Alias=heliadae.service
+Alias=heliadae-gps.service
