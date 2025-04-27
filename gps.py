@@ -252,8 +252,15 @@ def main():
     data_log_file = main_log_file.replace("main", "data")
     
     try:
-        _ = Gps(main_log_file, data_log_file)
-        _ = input("Press Enter or Ctrl+c to exit...")
+        gps = Gps(main_log_file, data_log_file)
+        while True:
+            if gps.io_thread.is_alive():
+                log(main_log_file, "GPS thread still running.")
+                time.sleep(30)
+            else:
+                log(main_log_file, "GPS thread died, shutting down.")
+                break
+
     except KeyboardInterrupt:
         log(main_log_file, "Ctrl+c detected, shutting down.")
 
