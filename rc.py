@@ -35,11 +35,11 @@ def main():
         while True:
             #log(main_log_file, "Logging buffer")
             #for data in device.data_buf():
-            #    msg = data.dt.isoformat() + " " + repr(data) + "\n"
+            #    msg = data.dt.isoformat() + " " + repr(data)
             #    log(data_log_file, msg)
             log(main_log_file, "Logging spectrum")
             spectrum = device.spectrum()
-            log(data_log_file, repr(spectrum) + "\n")
+            log(data_log_file, repr(spectrum))
             log(main_log_file, "Sleeping")
             time.sleep(5)
     except KeyboardInterrupt:
